@@ -1,0 +1,20 @@
+p
+{
+font-size: 12px;
+color: black;
+}
+
+p.awesome
+{
+font-size: 20px;
+color: red;
+}
+.pumpkin {
+
+ fill: yellow;
+
+ stroke: orange;
+
+ stroke-width: 5;
+
+}

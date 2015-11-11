@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="utf-8">
+<head>
+   <style>
+   table { 
+  
+   }
+   tr:nth-child(even) {
+    background: #f0f0f0; 
+   } 
+   td
+   {
+        text-align: center;
+   }
+   td:nth-child(1)
+   {
+    text-align: left;
+   }
+   
+   } 
+    </style>
+    </head>
+    <body>
+      <p><label></label><input type="range" name="points" min="1995" max="2012" step="1" value="2012" id="slider-time" oninput="ChangeYear();" ><label></label></p>
+    <p>Filter by:  <label>Americas<input type="checkbox" name="Americas" value="Americas" title="Americas" onchange = "CheckboxChanging ();" checked></input></label>
+    <label>Africa<input type="checkbox" name="Africa" value="Africa" title="Africa" onchange = "CheckboxChanging ();" checked></input></label>
+    <label>Asia<input type="checkbox" name="Asia" value="Asia" title="Asia" onchange = "CheckboxChanging ();" checked></input></label>
+    <label>Europe<input type="checkbox" name="Europe" value="Europe" title="Europe" onchange = "CheckboxChanging ();" checked></input></label>
+    <label>Oceania<input type="checkbox" name="Oceania" value="Oceania" title="Oceania" onchange = "CheckboxChanging ();" checked></input></label></p>
+    <p>Aggregation:  <label>none<input type="radio" name="none" value="none" onclick="CheckboxChanging();" checked></label>
+    <label>by Continents<input type="radio" name="none" value="byContinent" onclick="AggregationByContinents();"></label></p>
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+    <script>
+    function FindStart()
+    {
+      var result;
+      d3.selectAll("input").each(function(d) 
+      { 
+        if(d3.select(this).attr("type") == "range") 
+        {
+         result = this.min;
+        }
+      })
+      return result;
+    }
+    function FindFinish()
+    {
+      var result;
+      d3.selectAll("input").each(function(d) 
+      { 
+        if(d3.select(this).attr("type") == "range") 
+        {
+         result = this.max;
+        }
+      })
+      return result;
+    }
+    d3.select("p").selectAll ("label").text(function (d,i) {if (i==0) {return "Time Update: " + FindStart();} if (i==1) {return FindFinish()}});
+    onlycontinents = new Array;
+    var columns = ["name","continent","gdp","life_expectancy","population","year"];
+    var data;
+    var matericdata = new Array;
+    var checkedyear = 2012;
+    function AggregationByContinents()
+    {
+
+      var qq = 0;
+      var homestraight = new Array;
+      var finalchecedcontinents = MyFunction();
+      if (finalchecedcontinents.length == 0)
+      {
+        finalchecedcontinents = ["Americas","Africa","Asia","Europe","Oceania"];
+      }
+      onlycontinents = StrongByContinents (data,checkedyear);
+      for (var i=0; i<onlycontinents.length; i++)
+      {
+        if (finalchecedcontinents.indexOf (onlycontinents[i].name) != -1)
+        {
+          homestraight[qq] = onlycontinents[i];
+          qq = qq + 1;
+        }
+      }
+
+      onlycontinents = homestraight;
+      update (onlycontinents);
+             }
+    function ChangeYear()
+    {
+      
+      d3.selectAll("input").each(function(d) 
+      { 
+        if(d3.select(this).attr("type") == "range") 
+        {
+         checkedyear = this.value;
+        }
+      })
+      d3.json("countries_1995_2012.json", function(error, json)
+      {
+        data = RemoveYear(json,checkedyear);
+        d3.selectAll("input").each(function(d) { 
+          if(d3.select(this).attr("value") == "byContinent" && d3.select(this).node().checked) 
+          {
+            onlycontinents = StrongByContinents (data,checkedyear);
+            AggregationByContinents()
+          }
+          else
+          {
+
+            CheckboxChanging();
+          }
+        });
+        
+      });
+
+    }
+    function Formating (result,i)
+    {
+        if (i == 2)
+                {
+                  var por = 0;
+                  while (result > 1000)
+                  {
+                    result = result / 1000;
+                    por = por + 1;
+                  }
+                  if (por == 0)
+                  {
+                    result = result.toFixed(1);
+                    return result;
+                  }
+                  if (por == 1)
+                  {
+                    result = result.toFixed(1) + " K";
+                    return result;
+                    
+                  }
+                  if (por == 2)
+                  {
+                    result = result.toFixed(1) + " M";
+                    return result;
+                    
+                  }
+                  if (por == 3)
+                  {
+                    result = result.toFixed(1) + " G";
+                    return result;
+                    
+                  }
+                  if (por == 4)
+                  {
+                    result = result.toFixed(1) + " Т";
+                    return result;
+                    
+                  }
+                  if (por == 5)
+                  {
+                    result = result.toFixed(1) + " Р";
+                    return result;
+                    
+                  }
+                  if (por == 6)
+                  {
+                    result = result.toFixed(1) + " Е";
+                    return result;
+                    
+                  }
+                  if (por == 7)
+                  {
+                    result = result.toFixed(1) + " Z";
+                    return result;
+                    
+                  }
+                  if (por == 8)
+                  {
+                    result = result.toFixed(1) + " Y";
+                    return result;
+                    
+                  } 
+                  if (por > 8)
+                  {
+                    result = result.toFixed(1) + " VB";
+                    return result;
+                    
+                  }
+                }
+                if (i == 3)
+                {
+                  result = result.toFixed (1)
+                  return result;
+                }
+                if (i == 4)
+                {
+                  var array_of_blocks = new Array ();
+                  array_of_blocks = result.toString().split( /(?=(?:\d{3})+(?!\d))/ ); 
+                  var Formatted_number="";
+                  for (var j=0; j<array_of_blocks.length-1; j++)
+                  {
+                    Formatted_number = Formatted_number + array_of_blocks[j]+",";
+                  }
+                  Formatted_number = Formatted_number + array_of_blocks[array_of_blocks.length-1];
+                  result = Formatted_number;
+                  return result;
+
+                }
+                return result;
+    }
+    // выбор chexbox
+    function MyFunction()
+    {
+    //  selectAll ("tr").remove();
+      var checkedcontinents = new Array;
+      var q = 0;
+      d3.selectAll("input").each(function(d) 
+      { 
+        if(d3.select(this).attr("type") == "checkbox" && d3.select(this).node().checked) 
+        {
+         checkedcontinents[q] = this.name;
+         q = q + 1;
+        }
+      })
+      return checkedcontinents;
+    }
+
+    Create_Table();
+    function RemoveYear (complexstructure, requiredyear)
+    { 
+    var removed_data = new Array;
+        var countries_number = 0;
+        
+            
+        for (var i = 0; i<complexstructure.length; i++)
+        {
+          
+          var current_country = new Object();
+          current_country.name = complexstructure[i].name;
+          current_country.continent = complexstructure[i].continent;
+          
+          for (var k = 0; k<matericdata.length; k++)
+          {
+            if (matericdata[k].name == current_country.name)
+            {
+              current_country.continent = matericdata[k].continent;
+            }
+          }
+          
+          for (var j=0; j<complexstructure[i].years.length; j++)
+          {
+            if (complexstructure[i].years[j].year == requiredyear)
+            {
+              current_country.gdp = complexstructure[i].years[j].gdp;
+              if (current_country.gdp == null)
+              {
+                current_country.gdp = 0;
+              }
+              current_country.life_expectancy = complexstructure[i].years[j].life_expectancy;
+              if (current_country.life_expectancy == null)
+              {
+                current_country.life_expectancy = 0;
+              }
+              current_country.population = complexstructure[i].years[j].population;
+              if (current_country.population == null)
+              {
+                  current_country.population = 0;
+              }
+            }
+
+          }
+          
+          current_country.year = requiredyear;
+          removed_data[countries_number] = current_country;
+          countries_number = countries_number + 1;
+        }
+      
+        return removed_data;
+    }
+    function StrongByContinents (data,neededYear)
+    {
+      var gdp = new Array;
+        var life = new Array;
+        var population = new Array;
+        var count = new Array;
+        for (var i = 0; i<5; i++)
+        {
+          count[i] = 0;
+          gdp[i] = 0;
+          life [i] = 0;
+          population [i] = 0;
+        }
+        for (var i = 0; i<data.length; i++)
+        {
+          var s;
+            if (data[i].continent == "Americas")
+            {
+              s = 0;
+            }
+            if (data[i].continent == "Africa")
+            {
+              s = 1;
+            }
+            if (data[i].continent == "Asia")
+            {
+              s = 2;
+            }
+            if (data[i].continent == "Europe")
+            {
+              s = 3;
+            }
+            if (data[i].continent == "Oceania")
+            {
+              s = 4;
+            }
+            gdp[s] = gdp[s] + data[i].gdp;
+              life[s] = life[s] + data[i].life_expectancy;
+              population[s] = population[s] + data[i].population;
+              count[s] = count[s] + 1;
+        }
+        var m1 = new Object();
+        m1.name = "Americas";
+        m1.continent = "Americas";
+        m1.gdp = gdp[0];
+        m1.life_expectancy = life[0] / count [0];
+        m1.population = population [0];
+        m1.year = neededYear;
+        var m2 = new Object();
+        m2.name = "Africa";
+        m2.continent = "Africa";
+        m2.gdp = gdp[1];
+        m2.life_expectancy = life[1] / count [1];
+        m2.population = population [1];
+        m2.year = neededYear;
+        var m3 = new Object();
+        m3.name = "Asia";
+        m3.continent = "Asia";
+        m3.gdp = gdp[2];
+        m3.life_expectancy = life[2] / count [2];
+        m3.population = population [2];
+        m3.year = neededYear;
+        var m4 = new Object();
+        m4.name = "Europe";
+        m4.continent = "Europe";
+        m4.gdp = gdp[3];
+        m4.life_expectancy = life[3] / count [3];
+        m4.population = population [3];
+        m4.year = neededYear;
+        var m5 = new Object();
+        m5.name = "Oceania";
+        m5.continent = "Oceania";
+        m5.gdp = gdp[4];
+        m5.life_expectancy = life[4] / count [4];
+        m5.population = population [4];
+        m5.year = neededYear;
+        onlycontinents[0] = m1;
+        onlycontinents[1] = m2;
+        onlycontinents[2] = m3;
+        onlycontinents[3] = m4;
+        onlycontinents[4] = m5;
+        return onlycontinents;
+    }
+    function Create_Table ()
+    {
+      d3.json("countries_1995_2012.json", function(error, json)
+      {
+        
+        data = RemoveYear (json,2012);
+       // data = json;
+       
+        onlycontinents = StrongByContinents (data,2012);
+        table = d3.select("body").append("table"),
+        thead = table.append("thead").attr("class", "thead");
+        tbody = table.append("tbody");
+        table.append("caption").html("World Countries Ranking");
+
+        //Head line creating
+        thead.append("tr").selectAll("th").data(columns).enter().append("th").text(function(d) { return d; }).on("click", function (header, i) 
+        {
+          tbody.selectAll("tr").sort(function(a, b) 
+          {
+            if(a[header]===b[header]) 
+            {
+              return d3.ascending(a["name"], b["name"]);
+            }
+            return d3.descending(a[header], b[header]);
+          });
+        });
+          
+        rows = tbody.selectAll("tr").data(data).enter().append("tr");
+        
+        cells = rows.selectAll("td").data(function Fill(row) 
+        {
+          return d3.range(columns.length).map(function(i) 
+          {
+            var result = row[Object.keys(row)[Object.keys(row).indexOf(columns[i])]];
+            if (result != null)
+            {
+              return Formating (result,i);  
+            }
+
+            
+            
+          });         
+        }).enter().append("td").text(function(d) { if (d!=null) {return d;}});
+      });
+   
+
+  }
+  
+  function CheckboxChanging ()
+    {
+      d3.selectAll("input").each(function(d) { 
+
+      if(d3.select(this).attr("value") == "none" && d3.select(this).node().checked) 
+      {
+          var materics = MyFunction();
+          var filtered_data = data.filter(function(d) 
+                {
+                  if (materics.indexOf (d["continent"]) != -1)
+                  {
+                    
+                     return d;
+                  }
+                })
+          
+                update(filtered_data); 
+              }
+              if (d3.select(this).attr("value") == "byContinent" && d3.select(this).node().checked)
+              {
+                var materics = MyFunction();
+                onlycontinents = StrongByContinents (data,checkedyear);
+                var filtered_data = onlycontinents.filter(function(d) 
+                {
+                  if (materics.indexOf (d["continent"]) != -1)
+                  {
+                    
+                     return d;
+                  }
+                })
+          
+                update(filtered_data); 
+              }
+    })
+
+      
+      }
+    function update (newdata)
+    {
+      if (newdata.length == 0)
+      {
+        d3.selectAll("input").each(function(d) {
+        if(d3.select(this).attr("value") == "none" && d3.select(this).node().checked)
+        { 
+          newdata = data;
+        }
+        if (d3.select(this).attr("value") == "byContinent" && d3.select(this).node().checked)
+        {
+          newdata = onlycontinents;
+        }
+      });
+      }
+        tbody.selectAll("tr").data(newdata).enter().append("tr");
+        tbody.selectAll("tr").text (function (d) {return null;});
+        tbody.selectAll("tr").selectAll("td").data(function Fill(newdata)
+        {
+          return d3.range(columns.length).map(function(d,i) 
+          {
+            
+            
+              var result = newdata[Object.keys(newdata)[Object.keys(newdata).indexOf(columns[i])]];
+              return Formating (result,i);
+            
+          });
+          
+          }).enter().append("td").text(function(d) {  return d;});
+        
+
+        tbody.selectAll("tr").data(newdata).exit().remove();
+      }
+   
+    </script> 
+  </body>
+</html>

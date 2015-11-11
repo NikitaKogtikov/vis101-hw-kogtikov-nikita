@@ -1,0 +1,22 @@
+<meta charset="utf-8">
+<script src="http://d3js.org/d3.v3.min.js"> </script>
+<body>
+<ul>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+</ul>
+<script type="text/javascript">
+var phones = ['iPhone 6',,, 'Samsung Galaxy S5', 'LG G4', 'MiPad 5'];
+// Enter
+d3.select('ul').selectAll('li').data(phones).enter().append('li');
+// Update
+d3.select('ul').selectAll('li').data(phones).text( function(d){ return d; });
+// Exit
+d3.select('ul').selectAll('li').data(phones).exit().remove();
+</script>
+</body>
+</html>
