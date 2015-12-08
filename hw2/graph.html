@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="utf-8">
+<head>
+   <style>
+    .link {
+    stroke: lightgrey;
+    stroke-width: .8px;
+  }
+  .checked 
+  {
+	stroke: red;
+	stroke-width: 1.5px;
+  }
+  .unchecked 
+  {
+	stroke: whitesmoke;
+	stroke-width: .2px;
+  }
+  .node {
+    fill: white;
+    stroke: #000;
+    stroke-width: .9px;
+  }
+  .node:hover {
+    fill: black;
+  }
+  .unchoosen {
+  fill: lightgrey;
+  opacity: 0.1;
+  }
+  .choosen
+  {
+  fill: black;
+  }
+    </style>
+ </head>
+ <body>
+ <script src="http://d3js.org/d3.v3.min.js"></script>
+ <form>
+	<p>Layout:
+	
+    <label><input type="radio" name="column" value="population" > Population</label>
+    <label><input type="radio" name="column" value="gdp" > GDP</label>
+	<label><input type="radio" name="column" value="life" > Life expectancy</label>
+    <label><input type="radio" name="column" value="evenly" checked> Evenly</label>
+	<label><input type="radio" name="column" value="gpsp" > GDP-Population Scatterplot</label>
+	<label><input type="radio" name="column" value="llsp" > Longitude-Latitude Scatterplot</label>
+  <label><input type="radio" name="column" value="popsort" > Population-Sort</label></p>
+  <p><label><input type="radio" name="column" value="gdpsort" > GDP-Sort</label>
+  <label><input type="radio" name="column" value="lifesort" > Life Expectancy-Sort</label>
+  <label><input type="radio" name="column" value="circle" > Round</label>
+  <label><input type="radio" name="column" value="zebra" > Zebra</label>
+  <label><input type="radio" name="column" value="pizza" > Pizza</label>
+  <label><input type="radio" name="column" value="round" > Circle</label>
+  <label><input type="radio" name="column" value="groupround" > Group Circle</label>
+  <label><input type="radio" name="column" value="roundlinks" > Circle With Links</label>
+  <label><input type="radio" name="column" value="grouproundlinks" > Group Circle With Links</label>
+  </p>
+  </form>
+ <script type="text/javascript">
+ var detpos = 0;
+ var grav = 1;
+ var elekt = -1500;
+var posbefore = new Array();
+	var max_popul;
+	var max_life;
+	var min_life;
+	var max_gdp;
+	var names;
+	var node;
+	var max_lon;
+	var min_lon;
+	var con;
+	var max_lat;
+	var min_lat;
+	var transfer = new Array();
+	var sorted_population = new Array();
+	var sorted_gdp = new Array();
+	var sorted_life = new Array();
+	var margin = {top: 50, bottom: 10, left: 300, right: 40};
+	var width = 2000 - margin.left - margin.right;
+	var height = 1300 - margin.top - margin.bottom;
+	var graph = {nodes: [], links: []};
+	var svg = d3.select("body").append("svg")
+				.attr("width", width)
+				.attr("height", height);
+	var link;
+			  
+	var Africas = 0;
+	var Americas = 0;
+	var Oceanias = 0;
+	var Europas = 0;
+	var Asias = 0;
+	var force2 = d3.layout.force()
+		.size([width, height*(2/3)])
+		.charge(elekt)
+		.gravity (grav)
+		.on("tick", tick);
+	function tick(d) {
+	  graph_update(0.1);
+	}
+
+	var force = d3.layout.force();
+	
+	
+	d3.json("countries_2012.json", function(error, json)
+	{
+	data = json;
+		
+		node = svg.selectAll(".node")
+			.data(data);
+		node
+			.enter().append("circle");
+		node
+			.attr("class", "node")
+			.attr("r", 3)
+			
+		node
+			.exit()
+			.remove();
+		force
+			.nodes(data)
+			.links([])
+			.start();
+		
+		force.on("tick", function(e) {
+		node.attr("cx", function(d) { return 0; })
+          .attr("cy", function(d,i) { return 0; });
+		 
+		  });
+		  max_popul = data[0]['population'];
+		  
+		  max_gdp = data[0]['gdp'];
+		  max_life = data[0]['life_expectancy'];
+		  min_life = data[0]['life_expectancy'];
+		  max_lon = data[0]['longitude'];
+		  min_lon = data[0]['longitude'];
+		  max_lat = data[0]['latitude'];
+		  min_lat = data[0]['latitude'];
+		  for (var i = 0; i<data.length; i++)
+		  {
+		  if (data[i]['continent'] == "Africa")
+		  {
+			con = 1;
+			Africas += 1;
+		  }
+		  if (data[i]['continent'] == "Europe")
+		  {
+			con = 2;
+			Europas += 1;
+		  }
+		  if (data[i]['continent'] == "Asia")
+		  {
+			con = 3;
+			Asias += 1;
+		  }
+		  if (data[i]['continent'] == "Americas")
+		  {
+			con = 4;
+			Americas += 1;
+		  }
+		  if (data[i]['continent'] == "Oceania")
+		  {
+			con = 5;
+			Oceanias += 1;
+		  }
+		  
+		  
+		  graph.nodes[i] = {'x' : 0, 'y': 0, 'gdp' : data[i]['gdp'], 'population' : data[i]['population'], 'life_expectancy' : data[i]['life_expectancy'], 'longitude' : data[i]['longitude'], 'latitude' : data[i]['latitude'], 'name': data[i]['name'], 'pop-rank': 0, 'gdp-rank': 0, 'life-rank': 0, 'continent': con};
+			
+			sorted_population[i] = {'name': graph.nodes[i]['name'], 'population': graph.nodes[i]['population']};
+			sorted_gdp[i] = {'name': graph.nodes[i]['name'], 'gdp': graph.nodes[i]['gdp']};
+			sorted_life[i] = {'name': graph.nodes[i]['name'], 'life': graph.nodes[i]['life_expectancy']};
+			if (max_popul < data[i]['population'])
+				{
+				max_popul = data[i]['population'];
+				}
+			
+			if (max_gdp < data[i]['gdp'])
+			{
+			max_gdp = data[i]['gdp'];
+			}
+			if (max_life < data[i]['life_expectancy'])
+			{
+			max_life = data[i]['life_expectancy'];
+			}
+			if (min_life > data[i]['life_expectancy'])
+			{
+			min_life = data[i]['life_expectancy'];
+			}
+			if (max_lat < data[i]['latitude'])
+			{
+			max_lat = data[i]['latitude'];
+			}
+			if (min_lat > data[i]['latitude'])
+			{
+			min_lat = data[i]['latitude'];
+			}
+			if (max_lon < data[i]['longitude'])
+			{
+			max_lon = data[i]['longitude'];
+			}
+			if (min_lon > data[i]['longitude'])
+			{
+			min_lon = data[i]['longitude'];
+			}
+			
+		 }
+		 sorted_population.sort (function (a,b) {return d3.descending (a['population'], b['population'])});
+		 sorted_gdp.sort (function (a,b) {return d3.descending (a['gdp'], b['gdp'])});
+		 sorted_life.sort (function (a,b) {return d3.descending (a['life'], b['life'])});
+		 for (var i = 0; i< sorted_population.length; i++)
+		 {
+		 for (var j = 0; j<graph.nodes.length; j++)
+		 {
+		 if (graph.nodes[j]['name'] == sorted_population[i]['name'])
+		 {
+		 graph.nodes[j]['pop-rank'] = i;
+		 }
+		 }
+		 }
+		 for (var i = 0; i< sorted_gdp.length; i++)
+		 {
+		 for (var j = 0; j<graph.nodes.length; j++)
+		 {
+		 if (graph.nodes[j]['name'] == sorted_gdp[i]['name'])
+		 {
+		 graph.nodes[j]['gdp-rank'] = i;
+		 }
+		 }
+		 }
+		 for (var i = 0; i< sorted_life.length; i++)
+		 {
+		 for (var j = 0; j<graph.nodes.length; j++)
+		 {
+		 if (graph.nodes[j]['name'] == sorted_life[i]['name'])
+		 {
+		 graph.nodes[j]['life-rank'] = i;
+		 }
+		 }
+		 }
+		 name = svg.selectAll("text").data(data).enter().append("text").text(function (d,i) {return graph.nodes[i]['name']}).attr("x", function (d,i) {return 0;}).attr ("y", function (d,i) {return 0;});
+			svg.selectAll("text").on("mouseover", mouseovered)
+			.on("mouseout", mouseouted);
+		evenly_column();
+	});
+	
+	d3.json("countries_1995_2012.json", function(error, json)
+	{
+		for (var i=0; i<json.length; i++)
+		{
+		var thiscountry = json[i].country_id;
+		transfer.push ({"what": thiscountry, "to": i});
+			for (var j = 0; j<json[i]['years'][17].top_partners.length; j++)
+			{
+				graph.links.push({"source": graph.nodes[i], "target": json[i]['years'][17].top_partners[j].country_id});
+			}
+			
+			
+		}
+		for (var j = 0; j< graph.links.length; j++)
+			{
+				for (var l = 0; l<transfer.length; l++)
+				{
+					if (transfer[l].what == graph.links[j].target)
+					{
+						graph.links[j].target = graph.nodes[transfer[l].to];
+					}
+					
+				}
+			}	
+	//link = svg.selectAll(".link").append("line").data(graph.links).enter().append("line").attr("class", "link");
+	});	
+	
+ function life_column ()
+ {
+	d3.selectAll('.link').remove();
+ force3.stop();
+	force4.stop();
+	force2.stop();
+	graph.nodes.forEach(function(d, i) {
+	graph.nodes[i].x = 100;
+	graph.nodes[i].y = (height*(2/3)/ (min_life - max_life))*graph.nodes[i]["life_expectancy"] - (height*(2/3)/ (min_life - max_life))*max_life + 5;
+	})
+	graph_update(1000);
+ }
+ function population_column ()
+ {
+ d3.selectAll('.link').remove();
+ force3.stop();
+	force4.stop();
+ force2.stop();
+	graph.nodes.forEach(function(d, i) {
+	graph.nodes[i].x = 100;
+	graph.nodes[i].y = height* (2/3) - (graph.nodes[i]["population"]/max_popul*height)*(2/3) + 5;
+	})
+	graph_update(1000);
+}
+ function gpsp_column ()
+ {
+ d3.selectAll('.link').remove();
+ force3.stop();
+	force4.stop();
+ force2.stop();
+      graph.nodes.forEach(function(d, i) {
+	 graph.nodes[i].x = (graph.nodes[i]["population"]/max_popul*height)*(2/3) + 5;
+	 graph.nodes[i].y = height*(2/3) - (graph.nodes[i]["gdp"]/max_gdp*height)*(2/3) + 5;
+	 })
+	  
+	  graph_update(1000);
+
+ }
+   function llsp_column ()
+ {
+ 
+ d3.selectAll('.link').remove();
+ force3.stop();
+ force4.stop();
+ force2.stop();
+ var scale = d3.scale.linear()
+  .domain([min_lat,max_lat])
+  .range([height*(2/3) - 5,10]);
+var scale2 = d3.scale.linear().domain([min_lon,max_lon]).range ([0,width-100]);		
+      graph.nodes.forEach(function(d, i) {
+		graph.nodes[i].x =  scale2 (graph.nodes[i]["longitude"]);
+	 graph.nodes[i].y =  scale (graph.nodes[i]["latitude"]);
+	 })
+	  
+	  graph_update(1000);
+
+ }
+ 
+  function gdp_column ()
+ {
+ d3.selectAll('.link').remove();
+ force3.stop();
+	force4.stop();
+ force2.stop();
+      graph.nodes.forEach(function(d, i) {
+	 graph.nodes[i].x = 100;
+	 graph.nodes[i].y = height*(2/3) - (graph.nodes[i]["gdp"]/max_gdp*height)*(2/3) + 5;
+	 })
+	  
+	  graph_update(1000);
+
+ }
+  function pops_column ()
+ {
+	d3.selectAll('.link').remove();
+	
+	force3.stop();
+	force4.stop();
+	force2.stop();
+	  graph.nodes.forEach(function(d, i) {
+		
+		graph.nodes[i].x=100;
+		graph.nodes[i].y=10*graph.nodes[i]['pop-rank'] + 5;
+		
+	  })
+	  
+	  graph_update(1000);
+
+ }
+ function lifes_column ()
+ {
+ d3.selectAll('.link').remove();
+ force3.stop();
+	force4.stop();
+ force2.stop();
+		graph.nodes.forEach(function(d, i) {
+		graph.nodes[i].x=100;
+		graph.nodes[i].y=10*graph.nodes[i]['life-rank'] + 5;
+	})
+	  graph_update(1000);
+
+ }
+   function circle_layout () /////////////////////////////
+   {
+   d3.selectAll('.link').remove();
+   force4.stop();
+   force3.stop();
+		force2.nodes(graph.nodes)
+		.start();
+	
+	graph_update(1000);
+   }
+   var force3 = d3.layout.force()
+		.size([width, height*(2/3)])
+		.charge (elekt)
+		.gravity (grav)
+		.on("tick", tick2);
+	function tick2(d) {
+		for (var i = 0; i< graph.nodes.length; i++)
+		{
+			graph.nodes[i].x += (graph.nodes[i].continent - 3)*0.9;
+		}
+	  graph_update(0.1);
+	}
+   
+   function zebra_layout () //////////////////////////////////////
+   {
+   d3.selectAll('.link').remove();
+   force4.stop();
+   force2.stop();
+		force3.nodes(graph.nodes)
+		.start();
+	}
+	
+	var force4 = d3.layout.force()
+	.size([width, height*(2/3)])
+		.charge (elekt)
+		.gravity (grav)
+		.on("tick", tick3);
+		var angles_cos = [0.707, -0.454, -0.988, -0.156, 0.891];
+		var angles_sin = [0.707, 0.891, -0.156, -0.988, -0.454];
+		function tick3 (d)
+		{
+			for (var i = 0; i< graph.nodes.length; i++)
+			{
+				graph.nodes[i].x += (2*angles_cos[graph.nodes[i].continent-1])*0.9;
+				graph.nodes[i].y += (2*angles_sin[graph.nodes[i].continent-1])*0.9 + 1.1 ;
+			}
+			graph_update(0.1);
+		}
+		function pizza_layout () //////////////////////////////////////
+		{
+		d3.selectAll('.link').remove();
+			force2.stop();
+			force3.stop();
+			force4.nodes (graph.nodes).start();
+		}
+	
+	
+	function round_layout ()
+	{
+	d3.selectAll('.link').remove();
+		force3.stop();
+		force4.stop();
+		force2.stop();
+		var r = Math.min(height, width)/2;
+	  var arc = d3.svg.arc()
+			  .outerRadius(r);
+	  var pie = d3.layout.pie()
+			  
+			  .value(function(d, i) { 
+				return 1;  // We want an equal pie share/slice for each point
+			  });
+	  graph.nodes = pie(graph.nodes).map(function(d, i) {
+		// Needed to caclulate the centroid
+		d.innerRadius = 0;
+		d.outerRadius = r;
+		// Building the data object we are going to return
+		d.data.x = arc.centroid(d)[0]+width/2;
+		d.data.y = arc.centroid(d)[1]+height/2 - 200;
+		return d.data;
+	  })
+	  graph_update(500);
+	}
+	
+	
+   function gdps_column ()
+ {
+ d3.selectAll('.link').remove();
+	force3.stop();
+	force4.stop();
+	force2.stop();
+	graph.nodes.forEach(function(d, i) {
+		
+		graph.nodes[i].x=100;
+		graph.nodes[i].y=10*graph.nodes[i]['gdp-rank'] + 5;
+		
+	  })
+	  
+	  graph_update(1000);
+
+ }
+ function evenly_column ()
+ {
+ d3.selectAll('.link').remove();
+	force3.stop();
+	force4.stop();
+	force2.stop();
+	  graph.nodes.forEach(function(d, i) {
+	  
+		graph.nodes[i].x=100;
+		graph.nodes[i].y=10*i + 5;
+		
+	  })
+	  
+	  graph_update(1000);
+
+ }
+ function groupround_layout ()
+ {
+ d3.selectAll('.link').remove();
+	force3.stop();
+	force4.stop();
+	force2.stop();
+	var a1 = 0;
+	var a2 = 0;
+	var a3 = 0;
+	var a4 = 0;
+	var a5 = 0;
+	var xcent;
+	var ycent;
+	var r = Math.min(height, width)/2;
+	  var arc = d3.svg.arc()
+			  .outerRadius(r);
+	  var pie = d3.layout.pie()
+			  
+			  .value(function(d, i) { 
+				return 1;  // We want an equal pie share/slice for each point
+			  });
+	  graph.nodes = pie(graph.nodes).map(function(d, i) {
+		// Needed to caclulate the centroid
+		d.innerRadius = 0;
+		d.outerRadius = r;
+		// Building the data object we are going to return
+		d.data.x = arc.centroid(d)[0]+width/2;
+		d.data.y = arc.centroid(d)[1]+height/2 - 200;
+		xcent = d.data.x;
+		ycent = d.data.y;
+		return d.data;
+	  })
+	  
+	  for (var i=0; i<graph.nodes.length; i++)
+	  {
+		if (graph.nodes[i].continent == 1)
+		{
+			graph.nodes[i].x = width/2 +250* Math.cos(2*Math.PI/5) + 100* Math.cos(2*Math.PI*a1/Africas);
+			graph.nodes[i].y = height/2  + 250* Math.sin(2*Math.PI/5) + 100* Math.sin(2*Math.PI*a1/Africas) - 200;
+			a1 = a1 + 1;
+		}
+		if (graph.nodes[i].continent == 2)
+		{
+			graph.nodes[i].x = width/2 + 250* Math.cos(4*Math.PI/5) + 100* Math.cos(2*Math.PI*a2/Europas);
+			graph.nodes[i].y = height/2   + 250* Math.sin(4*Math.PI/5) + 100* Math.sin(2*Math.PI*a2/Europas)- 200;
+			a2 = a2 + 1;
+		}
+		if (graph.nodes[i].continent == 3)
+		{
+			graph.nodes[i].x = width/2 + 250* Math.cos(6*Math.PI/5) + 100* Math.cos(2*Math.PI*a3/Asias);
+			graph.nodes[i].y = height/2  + 250* Math.sin(6*Math.PI/5) + 100* Math.sin(2*Math.PI*a3/Asias)- 200;
+			a3 = a3 + 1;
+		}
+		if (graph.nodes[i].continent == 4)
+		{
+			graph.nodes[i].x = width/2 + 250* Math.cos(8*Math.PI/5) + 100* Math.cos(2*Math.PI*a4/Americas);
+			graph.nodes[i].y = height/2   + 250* Math.sin(8*Math.PI/5) + 100* Math.sin(2*Math.PI*a4/Americas)- 200;
+			a4 = a4 + 1;
+		}
+		if (graph.nodes[i].continent == 5)
+		{
+			graph.nodes[i].x = width/2 + 250* Math.cos(10*Math.PI/5) + 100* Math.cos(2*Math.PI*a5/Oceanias);
+			graph.nodes[i].y = height/2  +  250* Math.sin(10*Math.PI/5) + 100* Math.sin(2*Math.PI*a5/Oceanias)- 200;
+			a5 = a5 + 1;
+		}
+	  }
+	  graph_update (1000);
+	
+ }
+ function roundlinks_layout ()
+ {
+ detpos = 1;
+ svg.selectAll(".link").remove();
+	link = svg.selectAll(".link").append("line").data(graph.links).enter().append("line").attr("class", "link")
+	.attr ('x1', function (d,i) {return d.source.x;})
+	.attr ('x2', function (d,i) {return d.target.x;})
+	.attr ('y2', function (d,i) {return d.target.y;})
+	.attr ('y1', function (d,i) {return d.source.y;});
+	force3.stop();
+	force4.stop();
+	force2.stop();
+	for (var i=0; i<graph.nodes.length; i++)
+	{
+		posbefore[i] = {'x': graph.nodes[i].x ,'y': graph.nodes[i].y};
+	}	
+	var r = Math.min(height, width)/2;
+	var arc = d3.svg.arc()
+			  .outerRadius(r);
+	var pie = d3.layout.pie()
+			  
+			  .value(function(d, i) { 
+				return 1;  // We want an equal pie share/slice for each point
+			  });
+	  graph.nodes = pie(graph.nodes).map(function(d, i) {
+		// Needed to caclulate the centroid
+		d.innerRadius = 0;
+		d.outerRadius = r;
+		// Building the data object we are going to return
+		d.data.x = arc.centroid(d)[0]+width/2;
+		d.data.y = arc.centroid(d)[1]+height/2 - 200;
+		return d.data;
+	  })
+	  graph_update2(500);
+	
+ }
+ function grouproundlinks_layout ()
+ {
+ detpos=1;
+	svg.selectAll(".link").remove();
+	link = svg.selectAll(".link").append("line").data(graph.links).enter().append("line").attr("class", "link")
+	.attr ('x1', function (d,i) {return d.source.x;})
+	.attr ('x2', function (d,i) {return d.target.x;})
+	.attr ('y2', function (d,i) {return d.target.y;})
+	.attr ('y1', function (d,i) {return d.source.y;});
+	force3.stop();
+	force4.stop();
+	force2.stop();
+	for (var i=0; i<graph.nodes.length; i++)
+	{
+		posbefore[i] = {'x': graph.nodes[i].x + 5 ,'y': graph.nodes[i].y + 5};
+	}
+	
+	var a1 = 0;
+	var a2 = 0;
+	var a3 = 0;
+	var a4 = 0;
+	var a5 = 0;
+	var xcent;
+	var ycent;
+	var r = Math.min(height, width)/2;
+	  var arc = d3.svg.arc()
+			  .outerRadius(r);
+	  var pie = d3.layout.pie()
+			  
+			  .value(function(d, i) { 
+				return 1;  // We want an equal pie share/slice for each point
+			  });
+	  graph.nodes = pie(graph.nodes).map(function(d, i) {
+		// Needed to caclulate the centroid
+		d.innerRadius = 0;
+		d.outerRadius = r;
+		// Building the data object we are going to return
+		d.data.x = arc.centroid(d)[0]+width/2;
+		d.data.y = arc.centroid(d)[1]+height/2 - 200;
+		xcent = d.data.x;
+		ycent = d.data.y;
+		return d.data;
+	  })
+	  
+	  for (var i=0; i<graph.nodes.length; i++)
+	  {
+		if (graph.nodes[i].continent == 1)
+		{
+			graph.nodes[i].x = width/2 +250* Math.cos(2*Math.PI/5) + 100* Math.cos(2*Math.PI*a1/Africas);
+			graph.nodes[i].y = height/2  + 250* Math.sin(2*Math.PI/5) + 100* Math.sin(2*Math.PI*a1/Africas) - 200;
+			a1 = a1 + 1;
+		}
+		if (graph.nodes[i].continent == 2)
+		{
+			graph.nodes[i].x = width/2 + 250* Math.cos(4*Math.PI/5) + 100* Math.cos(2*Math.PI*a2/Europas);
+			graph.nodes[i].y = height/2   + 250* Math.sin(4*Math.PI/5) + 100* Math.sin(2*Math.PI*a2/Europas)- 200;
+			a2 = a2 + 1;
+		}
+		if (graph.nodes[i].continent == 3)
+		{
+			graph.nodes[i].x = width/2 + 250* Math.cos(6*Math.PI/5) + 100* Math.cos(2*Math.PI*a3/Asias);
+			graph.nodes[i].y = height/2  + 250* Math.sin(6*Math.PI/5) + 100* Math.sin(2*Math.PI*a3/Asias)- 200;
+			a3 = a3 + 1;
+		}
+		if (graph.nodes[i].continent == 4)
+		{
+			graph.nodes[i].x = width/2 + 250* Math.cos(8*Math.PI/5) + 100* Math.cos(2*Math.PI*a4/Americas);
+			graph.nodes[i].y = height/2   + 250* Math.sin(8*Math.PI/5) + 100* Math.sin(2*Math.PI*a4/Americas)- 200;
+			a4 = a4 + 1;
+		}
+		if (graph.nodes[i].continent == 5)
+		{
+			graph.nodes[i].x = width/2 + 250* Math.cos(10*Math.PI/5) + 100* Math.cos(2*Math.PI*a5/Oceanias);
+			graph.nodes[i].y = height/2  +  250* Math.sin(10*Math.PI/5) + 100* Math.sin(2*Math.PI*a5/Oceanias)- 200;
+			a5 = a5 + 1;
+		}
+	  }
+	  graph_update2 (500);
+	
+ }
+ function mouseovered(d)
+ {
+	
+	var partners = new Array();
+		for (var i =0; i<graph.links.length; i++)
+		{
+		
+			if (graph.links[i].source.name == d.name)
+			{
+				partners.push (graph.links[i].target.name);
+			}
+		}
+		partners.push (d.name);
+		svg.selectAll(".link").filter(function(l) 
+		{
+		
+			if ((l.source.name == d.name))
+			{
+			return true;
+			}
+			else 
+			{
+			return false;
+			}
+		}).attr ("class","checked");
+		
+			svg.selectAll("text").filter (function(l)
+			{
+			
+			if ((partners.indexOf(l.name))== -1)
+			
+				{
+					return true;
+				}
+			else
+				{
+					return false;
+				}
+			}).attr("class","unchoosen");
+		svg.selectAll(".link").filter(function(l) 
+		{
+		
+			if ((l.source.name != d.name))
+			{
+			return true;
+			}
+			else 
+			{
+			return false;
+			}
+			
+		}).attr ("class","unchecked");
+}
+ function mouseouted()
+ {
+	svg.selectAll(".checked").attr ("class","link");
+	svg.selectAll(".unchecked").attr ("class","link");
+	svg.selectAll(".unchoosen").attr ("class","choosen");
+	
+ }
+ function graph_update(duration) {
+	 	
+	 node.transition().duration(duration)
+		  .attr("transform", function(d,i) { 
+			
+			return "translate("+graph.nodes[i].x+","+graph.nodes[i].y+")"; 
+		  });
+		  d3.selectAll("text").transition().duration(duration).attr("transform", function (d,i) 
+		  {
+		  if (detpos == 1)
+		  {
+			return "translate("+(graph.nodes[i].x + 5 - posbefore[i].x)+","+(graph.nodes[i].y + 5 - posbefore[i].y)+")";
+		  }
+		  if (detpos == 0)
+		  {
+			return "translate("+(graph.nodes[i].x+5)+","+(graph.nodes[i].y+5)+")";
+		  }
+		  });
+	}
+	
+	
+	
+	
+	function graph_update2(duration) 
+	{
+		svg.selectAll("text").remove();
+		svg.selectAll("text").data(data).enter().append("text").text(function (d,i) {return graph.nodes[i]['name']}).attr("x", function (d,i) {return posbefore[i].x;}).attr ("y", function (d,i) {return posbefore[i].y;});
+			svg.selectAll("text").on("mouseover", mouseovered)
+			.on("mouseout", mouseouted);
+	
+		link.transition().duration(duration)
+		  .attr("x1", function(d) { return d.target.x; })
+		  .attr("y1", function(d) { return d.target.y; })
+		  .attr("x2", function(d) { return d.source.x; })
+		  .attr("y2", function(d) { return d.source.y; });
+	  
+		 
+		node.transition().duration(duration)
+		  .attr("transform", function(d,i) { 
+			return "translate("+graph.nodes[i].x+","+graph.nodes[i].y+")"; 
+		  });
+		d3.selectAll("text").transition().duration(duration).attr("transform", function (d,i) 
+		  {
+		
+		  return "translate("+(graph.nodes[i].x + 5 - posbefore[i].x)+","+(graph.nodes[i].y  + 5 - posbefore[i].y )+")";
+		  });
+		
+	}
+	
+	
+	d3.select("input[value=\"population\"]").on("click", population_column);
+	d3.select("input[value=\"gdp\"]").on("click", gdp_column);
+	d3.select("input[value=\"evenly\"]").on("click", evenly_column);
+	d3.select("input[value=\"life\"]").on("click", life_column);
+	d3.select("input[value=\"gpsp\"]").on("click", gpsp_column);
+	d3.select("input[value=\"llsp\"]").on("click", llsp_column);
+	d3.select("input[value=\"popsort\"]").on("click", pops_column);
+	d3.select("input[value=\"gdpsort\"]").on("click", gdps_column);
+	d3.select("input[value=\"lifesort\"]").on("click", lifes_column);
+	d3.select("input[value=\"circle\"]").on("click", circle_layout);
+	d3.select("input[value=\"zebra\"]").on("click", zebra_layout);
+	d3.select("input[value=\"pizza\"]").on("click", pizza_layout);
+	d3.select("input[value=\"round\"]").on("click", round_layout);
+	d3.select("input[value=\"groupround\"]").on("click", groupround_layout);
+	d3.select("input[value=\"roundlinks\"]").on("click", roundlinks_layout);
+	d3.select("input[value=\"grouproundlinks\"]").on("click", grouproundlinks_layout);
+ </script>
+ </body>
