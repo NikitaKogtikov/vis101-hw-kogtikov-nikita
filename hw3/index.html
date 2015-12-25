@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="utf-8">
+<head>
+<script>
+</script>
+<script>var count = new Array();</script>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="http://d3js.org/queue.v1.min.js"></script>
+<script src="2_Tasks.js"></script>
+<style>
+body {
+  font: 10px sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.area {
+  fill: steelblue;
+}
+.brush .extent {
+  stroke: #fff;
+  fill-opacity: .125;
+  shape-rendering: crispEdges;
+}
+#slider-time{
+-webkit-appearance: slider-vertical;
+height: 400px;
+
+}
+
+</style>
+</head>
+<body>
+<input type="range" name="points" min="0" max="0.5" step="0.005" value="0" id="slider-time" oninput="change();" >
+<script>
+var max;
+var x;
+var y;
+var area;
+var xAxis1;
+var month = [31,28,31,30,31,30,31,31,30,31,30,31];
+var margin = {top: 20, right: 20, bottom: 30, left: 50},
+    width = 960 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+	var width1 = width/2;
+	var height1 = height/2;
+	var x1;
+var y1;
+var y2;
+var x2;
+var yAxis1;
+var xAxis2;
+var yAxis2;
+var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+d3.select("body").selectAll("slider-time").attr ("height","450px");
+function IndexNumberOfDayInTheYear (date)
+{
+	var f = new Array();
+	var f = date.split("-");
+	var day = f[2];
+	var mon = f[1];
+	var before = 0;
+	for (var i = 0; i < Number(mon) - 1; i++)
+	{
+		before = before + month[i];
+	}
+	return Number(day) + before;
+	
+
+}
+
+
+var brush = d3.svg.brush().x(d3.scale.linear().range([0, width1]).domain([0,365])).on("brush", brushed);
+svg.append("g").attr("class", "brush").call(brush).selectAll("rect")
+      .attr("y", -7)
+      .attr("height", height1 + 8);
+function brushed ()
+{
+	var interval = brush.extent();
+	var newcount = new Array();
+	
+	for (var i = 0; i< count.length; i++)
+	{
+		if ((IndexNumberOfDayInTheYear (count[i].day)>=interval[0])&&(IndexNumberOfDayInTheYear (count[i].day)<=interval[1]))
+		{
+		newcount.push (count[i]);
+		}
+	}
+	DrawAgeDistribution (newcount);
+	DrawPriorities (newcount);
+}
+function DrawPriorities(data)
+{
+	var priorities = new Array();
+	for (var i=0; i<16; i++)
+	{
+		priorities[i] = 0;
+	}
+	for (var i=0; i< data.length; i++)
+	{
+		priorities[0] += data[i]["sum(p0)"];
+		priorities[1] += data[i]["sum(p1)"];
+		priorities[2] += data[i]["sum(p2)"];
+		priorities[3] += data[i]["sum(p3)"];
+		priorities[4] += data[i]["sum(p4)"];
+		priorities[5] += data[i]["sum(p5)"];
+		priorities[6] += data[i]["sum(p6)"];
+		priorities[7] += data[i]["sum(p7)"];
+		priorities[8] += data[i]["sum(p8)"];
+		priorities[9] += data[i]["sum(p9)"];
+		priorities[10] += data[i]["sum(p10)"];
+		priorities[11] += data[i]["sum(p11)"];
+		priorities[12] += data[i]["sum(p12)"];
+		priorities[13] += data[i]["sum(p13)"];
+		priorities[14] += data[i]["sum(p14)"];
+		priorities[15] += data[i]["sum(p15)"];
+		}
+		var maximum = 0;
+		for (var i=0; i<16; i++)
+		{
+			if (maximum < priorities[i])
+			{
+				maximum = priorities[i];
+			}
+		}
+		
+	/*	var xScale = d3.scale.linear()
+		.domain ([0, maximum])
+		.range ([0, 100]);
+		d3.selectAll("rect").remove();
+		var bars = svg.append("rect")
+                   .data(priorities)
+                    .enter()
+                    .append("rect")
+					.attr("width", function(d) { return xScale(d); })
+                    .attr("height", 5)
+                    .attr("x", 100 )
+                    .attr("y", (height1 + 20 + i*10))*/
+}
+function DrawAgeDistribution (data)
+{
+	var ages = new Array();
+	for (var i=0; i<100; i++)
+	{
+		ages[i] = 0;
+	}
+
+		var max1 = 0; 
+for (var i =0; i<data.length; i++)
+{
+	for (var j = 0; j<data[i]["age"].length; j++)
+	{
+		if ((Number(data[i]["age"][j]["age"]) < 100)&&(Number(data[i]["age"][j]["age"]) > 0))
+		{
+			ages[Number(data[i]["age"][j]["age"]) - 1] = ages[Number(data[i]["age"][j]["age"]) - 1] + data[i]["age"][j]["count(*)"];
+			
+		}
+	}
+}
+for (var i=0; i<ages.length; i++)
+{
+	if (max1 < ages[i])
+	{
+		max1 = ages[i];
+	}
+}
+
+d3.select("body").select("svg").select("g").select("path.area2").remove();
+y1.domain([0,max1]);
+var area2 = d3.svg.area();
+	 area2.x(function(d,i) { return x1(100 - i+1); }).y0(0).y1(function(d) {  return y1(d); });
+	svg.append("path")
+      .datum(ages)
+	  .attr("transform","translate(" + (width1 + 20) + "," + (height1) +"),rotate(-90)")
+	  .attr("class", "area2")
+      .attr("d", area2);	
+	
+
+}
+function change()
+{
+var ratio = 1;
+d3.selectAll("input").each(function(d) 
+      { 
+        if(d3.select(this).attr("type") == "range") 
+        {
+         ratio = 1 - this.value;
+        }
+      });
+	 
+d3.select("body").select("svg").select("g").selectAll("path.area").remove();
+
+area.y1(function(d) { return  y(((max - d["count(*)"])*(1-ratio))+d["count(*)"]);});
+
+svg.append("path")
+      .datum(count)
+      .attr("class", "area")
+      .attr("d", area);
+}
+function DrawPlot (data)
+{
+
+ x = d3.scale.linear()
+		.range([0, width1])
+		.domain([0,365]);
+max = d3.max(data, function(d) { return d["count(*)"]; });
+	y = d3.scale.linear()
+		.range([0, height1])
+		.domain([max,0]);
+var xAxis = d3.svg.axis()
+    .scale(x)
+    .orient("bottom");
+	svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height1 + ")")
+      .call(xAxis);
+	var yAxis = d3.svg.axis()
+    .scale(y)
+    .orient("left");
+	svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis);
+	
+     area = d3.svg.area();
+	 area.x(function(d) { return x(IndexNumberOfDayInTheYear(d.day)); }).y0(height1).y1(function(d) {  return y(d["count(*)"]); });
+	svg.append("path")
+      .datum(count)
+      .attr("class", "area")
+      .attr("d", area);
+	  
+	  
+	  x1 = d3.scale.linear()
+		.range([0, height1])
+		.domain([0,100]);
+		y1 = d3.scale.linear()
+		.range([0, width1])
+		.domain([0,100]);
+		
+		xAxis1 = d3.svg.axis()
+			.scale(x1)
+			.orient("left");
+		svg.append("g")
+		.attr("class", "x axis")
+		.attr("transform", "translate(" + (width1 + 20) + "," + 0 +")")
+		.call(xAxis1);
+		
+		x2 = d3.scale.linear()
+		.range([0, height1 - 25])
+		.domain([0,100]);
+		y2 = d3.scale.linear()
+		.range([0, width1])
+		.domain([0,100]);
+xAxis2 = d3.svg.axis()
+    .scale(x2)
+    .orient("left");
+	svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(" + 0 + "," + (height1 + 20) +")")
+      .call(xAxis2);	
+	 yAxis2 = d3.svg.axis()
+    .scale(y2)
+    .orient("top");
+	svg.append("g")
+      .attr("class", "y axis")
+      .attr("transform", "translate(" + 0 + "," + width1 +")")
+      .call(yAxis2); 
+	  }
+</script>
+</body>
+</html>
