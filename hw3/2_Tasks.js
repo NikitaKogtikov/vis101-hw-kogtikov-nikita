@@ -1,5 +1,6 @@
  var metaData;
  var interwiev = new Array();
+
  var notes;
  var start_date = "2013-01-01";
  var stop_date = "2013-12-31";
@@ -10,6 +11,7 @@
     .await(allLoaded);
 function allLoaded (perDayData, metaData,allData )
 {
+	
 	interview = allData;
 	notes = metaData;
 	aggregateCountsForRange (start_date, stop_date);
@@ -59,6 +61,21 @@ function CompareToDates (a,b)
 function aggregateCountsForRange (start_date, stop_date)
 {
 	count = [];
+	namesoffields = [];
+	
+	for (var i=0; i<1000; i++)
+	{
+		var j = 100 + i;
+		
+		var str = j.toString();
+		
+		if (notes.choices[str]== null)
+		{
+			break;
+		}
+		
+		namesoffields.push (notes.choices[str]);
+	}
 	
 	for (var i = 0; i<interview.length; i++)
 	{
@@ -66,8 +83,9 @@ function aggregateCountsForRange (start_date, stop_date)
 		{
 			count.push (interview[i]);
 		}
-	}	
-	DrawPlot(count);
+	}
+		
+	DrawPlot(count, namesoffields);
 }
 
  

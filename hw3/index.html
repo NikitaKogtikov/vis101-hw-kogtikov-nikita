@@ -4,7 +4,9 @@
 <head>
 <script>
 </script>
-<script>var count = new Array();</script>
+<script>var count = new Array();
+var namesoffields= new Array();
+</script>
 <script src="http://d3js.org/d3.v3.min.js"></script>
 <script src="http://d3js.org/queue.v1.min.js"></script>
 <script src="2_Tasks.js"></script>
@@ -23,6 +25,10 @@ body {
 .area {
   fill: steelblue;
 }
+.barchart 
+{
+	
+}
 .brush .extent {
   stroke: #fff;
   fill-opacity: .125;
@@ -39,6 +45,7 @@ height: 400px;
 <body>
 <input type="range" name="points" min="0" max="0.5" step="0.005" value="0" id="slider-time" oninput="change();" >
 <script>
+var maximum = 200;
 var max;
 var x;
 var y;
@@ -51,6 +58,8 @@ var margin = {top: 20, right: 20, bottom: 30, left: 50},
 	var width1 = width/2;
 	var height1 = height/2;
 	var x1;
+	var colors = new Array();
+	colors = ["red", "yellow", "blue", "black", "green", "crimson","gold","indigo","coral","brown","aqua","aquamarine","fuchsia","chartreuse","gray","chocolate"];
 var y1;
 var y2;
 var x2;
@@ -62,7 +71,7 @@ var svg = d3.select("body").append("svg")
     .attr("height", height + margin.top + margin.bottom)
   .append("g")
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-d3.select("body").selectAll("slider-time").attr ("height","450px");
+d3.select("body").selectAll("slider-time").attr ("height","400px");
 function IndexNumberOfDayInTheYear (date)
 {
 	var f = new Array();
@@ -81,6 +90,7 @@ function IndexNumberOfDayInTheYear (date)
 
 
 var brush = d3.svg.brush().x(d3.scale.linear().range([0, width1]).domain([0,365])).on("brush", brushed);
+
 svg.append("g").attr("class", "brush").call(brush).selectAll("rect")
       .attr("y", -7)
       .attr("height", height1 + 8);
@@ -133,19 +143,37 @@ function DrawPriorities(data)
 				maximum = priorities[i];
 			}
 		}
-		
-	/*	var xScale = d3.scale.linear()
+		var xScale = d3.scale.linear()
 		.domain ([0, maximum])
 		.range ([0, 100]);
-		d3.selectAll("rect").remove();
-		var bars = svg.append("rect")
-                   .data(priorities)
-                    .enter()
-                    .append("rect")
-					.attr("width", function(d) { return xScale(d); })
-                    .attr("height", 5)
-                    .attr("x", 100 )
-                    .attr("y", (height1 + 20 + i*10))*/
+		d3.selectAll("rect.barchart").remove();
+	
+		d3.select("svg").selectAll("rect.barchart").data(priorities).enter().append("rect").attr("class", "barchart")
+		.attr("x", function (d,i) {return 60 + (27.2)*i;})
+		.attr ("y", function (d,i) {return 465 - 2*xScale(d)})
+		.attr ("height", function (d,i) {return 2*xScale(d);}) //растяжка
+		.attr ("width", 20)
+		.attr ("fill", function (d,i) {return colors[i];});
+		var val = new Array();
+		for (var i=0; i<11; i++)
+		{
+			val[i] = i;
+		}
+		
+	d3.select("html").select("body").select("svg").select("g").selectAll("g.z.axis").remove();	
+	x3 = d3.scale.linear()
+		.range([0, height1 - 25])
+		.domain([maximum,0]);	
+	xAxis3 = d3.svg.axis()
+    .scale(x3)
+    .orient("left");
+	svg.append("g")
+      .attr("class", "z axis")
+      .attr("transform", "translate(" + 0 + "," + (height1 + 20) +")")
+      .call(xAxis3);
+	d3.select("body").select("svg").selectAll("text.names").data(namesoffields).enter().append("text").attr("class", "names").text(function (d,i) {return namesoffields[i];}).attr("x",width1*(8/7) + 60 ).attr ("y", function (d,i) {return height1* (8/7) + 14*i;});
+	d3.select("body").select("svg").selectAll("rect.leg").data(colors).enter().append("rect").attr("class","leg").attr("x",width1*(8/7) + 20).attr("y", function (d,i) {return height1* (8/7) + 14*i - 8;}).attr("width",30).attr("height",10).attr("fill", function (d,i) {return d;});	
+		
 }
 function DrawAgeDistribution (data)
 {
@@ -194,21 +222,23 @@ d3.selectAll("input").each(function(d)
       { 
         if(d3.select(this).attr("type") == "range") 
         {
-         ratio = 1 - this.value;
+         ratio = this.value;
         }
       });
 	 
 d3.select("body").select("svg").select("g").selectAll("path.area").remove();
 
-area.y1(function(d) { return  y(((max - d["count(*)"])*(1-ratio))+d["count(*)"]);});
+area.y1(function(d) { return  y(Math.pow(max - d["count(*)"], 2*ratio) + d["count(*)"]);});
 
 svg.append("path")
       .datum(count)
       .attr("class", "area")
       .attr("d", area);
 }
-function DrawPlot (data)
+function DrawPlot (data,names)
 {
+namesoffields = names;
+
 
  x = d3.scale.linear()
 		.range([0, width1])
@@ -256,7 +286,7 @@ var xAxis = d3.svg.axis()
 		
 		x2 = d3.scale.linear()
 		.range([0, height1 - 25])
-		.domain([0,100]);
+		.domain([maximum,0]);
 		y2 = d3.scale.linear()
 		.range([0, width1])
 		.domain([0,100]);
@@ -264,12 +294,13 @@ xAxis2 = d3.svg.axis()
     .scale(x2)
     .orient("left");
 	svg.append("g")
-      .attr("class", "x axis")
+      .attr("class", "z axis")
       .attr("transform", "translate(" + 0 + "," + (height1 + 20) +")")
       .call(xAxis2);	
-	 yAxis2 = d3.svg.axis()
+yAxis2 = d3.svg.axis()
     .scale(y2)
-    .orient("top");
+	.tickValues([])
+	.orient ("top");
 	svg.append("g")
       .attr("class", "y axis")
       .attr("transform", "translate(" + 0 + "," + width1 +")")
